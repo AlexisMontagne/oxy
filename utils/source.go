@@ -10,15 +10,22 @@ import (
 // identifies the source. amount stands for amount of connections the source consumes, usually 1 for connection limiters
 // error should be returned when source can not be identified
 type SourceExtractor interface {
+	fmt.Stringer
+
 	Extract(req *http.Request) (token string, amount int64, err error)
 }
 
 // ExtractorFunc extractor function type
-type ExtractorFunc func(req *http.Request) (token string, amount int64, err error)
+type ExtractorFunc struct {
+	Key  string
+	Func func(req *http.Request) (token string, amount int64, err error)
+}
+
+func (f ExtractorFunc) String() string { return f.Key }
 
 // Extract extract from request
 func (f ExtractorFunc) Extract(req *http.Request) (string, int64, error) {
-	return f(req)
+	return f.Func(req)
 }
 
 // ExtractSource extract source function type
@@ -27,10 +34,10 @@ type ExtractSource func(req *http.Request)
 // NewExtractor creates a new SourceExtractor
 func NewExtractor(variable string) (SourceExtractor, error) {
 	if variable == "client.ip" {
-		return ExtractorFunc(extractClientIP), nil
+		return ExtractorFunc{Key: variable, Func: extractClientIP}, nil
 	}
 	if variable == "request.host" {
-		return ExtractorFunc(extractHost), nil
+		return ExtractorFunc{Key: variable, Func: extractHost}, nil
 	}
 	if strings.HasPrefix(variable, "request.header.") {
 		header := strings.TrimPrefix(variable, "request.header.")
@@ -55,7 +62,10 @@ func extractHost(req *http.Request) (string, int64, error) {
 }
 
 func makeHeaderExtractor(header string) SourceExtractor {
-	return ExtractorFunc(func(req *http.Request) (string, int64, error) {
-		return req.Header.Get(header), 1, nil
-	})
+	return ExtractorFunc{
+		Key: "request.header." + header,
+		Func: func(req *http.Request) (string, int64, error) {
+			return req.Header.Get(header), 1, nil
+		},
+	}
 }

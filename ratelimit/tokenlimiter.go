@@ -129,7 +129,9 @@ func (tl *TokenLimiter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if err := tl.consumeRates(req, source, amount); err != nil {
-		tl.log.Warnf("limiting request %v %v, limit: %v", req.Method, req.URL, err)
+		tl.log.WithFields(
+			log.Fields{"key": tl.extract.String(), "value": source},
+		).Warnf("limiting request %v %v, limit: %v", req.Method, req.URL, err)
 		tl.errHandler.ServeHTTP(w, req, err)
 		return
 	}

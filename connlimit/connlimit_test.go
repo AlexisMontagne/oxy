@@ -107,5 +107,5 @@ func faultyExtractor(_ *http.Request) (string, int64, error) {
 	return "", -1, fmt.Errorf("oops")
 }
 
-var headerLimit = utils.ExtractorFunc(headerLimiter)
-var faultyExtract = utils.ExtractorFunc(faultyExtractor)
+var headerLimit = utils.ExtractorFunc{Func: headerLimiter}
+var faultyExtract = utils.ExtractorFunc{Func: faultyExtractor}
